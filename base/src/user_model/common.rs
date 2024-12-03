@@ -13,7 +13,7 @@ use crate::{
     },
     model::Model,
     types::{
-        Alignment, BorderItem, CellType, Col, HorizontalAlignment, SheetProperties, SheetState,
+        Alignment, BorderItem, CellType, Col, DefinedName, HorizontalAlignment, SheetProperties,
         Style, VerticalAlignment,
     },
     utils::is_valid_hex_color,
@@ -1735,8 +1735,8 @@ impl UserModel {
     }
 
     /// Returns the list of defined names
-    pub fn get_defined_name_list(&self) -> Vec<(String, Option<u32>, String)> {
-        self.model.workbook.get_defined_names_with_scope()
+    pub fn get_defined_name_list(&self) -> Vec<DefinedName> {
+        self.model.workbook.defined_names.clone()
     }
 
     /// Delete an existing defined name
@@ -1790,8 +1790,6 @@ impl UserModel {
             new_formula: new_formula.to_string(),
         }];
         self.push_diff_list(diff_list);
-        self.model
-            .update_defined_name(name, scope, new_name, new_scope, new_formula)?;
         self.evaluate_if_not_paused();
         Ok(())
     }
@@ -1966,41 +1964,20 @@ impl UserModel {
                 } => {
                     self.model.set_show_grid_lines(*sheet, *old_value)?;
                 }
-                Diff::CreateDefinedName {
-                    name,
-                    scope,
-                    value: _,
-                } => {
-                    self.model.delete_defined_name(name, *scope)?;
-                }
+                Diff::CreateDefinedName { name, scope, value } => todo!(),
                 Diff::DeleteDefinedName {
                     name,
                     scope,
                     old_value,
-                } => {
-                    self.model.new_defined_name(name, *scope, old_value)?;
-                }
+                } => todo!(),
                 Diff::UpdateDefinedName {
                     name,
                     scope,
                     old_formula,
                     new_name,
                     new_scope,
-                    new_formula: _,
-                } => {
-                    self.model.update_defined_name(
-                        new_name,
-                        *new_scope,
-                        name,
-                        *scope,
-                        old_formula,
-                    )?;
-                }
-                Diff::SetSheetState {
-                    index,
-                    old_value,
-                    new_value: _,
-                } => self.model.set_sheet_state(*index, old_value.clone())?,
+                    new_formula,
+                } => todo!(),
             }
         }
         if needs_evaluation {
@@ -2128,33 +2105,20 @@ impl UserModel {
                 } => {
                     self.model.set_show_grid_lines(*sheet, *new_value)?;
                 }
-                Diff::CreateDefinedName { name, scope, value } => {
-                    self.model.new_defined_name(name, *scope, value)?
-                }
+                Diff::CreateDefinedName { name, scope, value } => todo!(),
                 Diff::DeleteDefinedName {
                     name,
                     scope,
-                    old_value: _,
-                } => self.model.delete_defined_name(name, *scope)?,
+                    old_value,
+                } => todo!(),
                 Diff::UpdateDefinedName {
                     name,
                     scope,
-                    old_formula: _,
+                    old_formula,
                     new_name,
                     new_scope,
                     new_formula,
-                } => self.model.update_defined_name(
-                    name,
-                    *scope,
-                    new_name,
-                    *new_scope,
-                    new_formula,
-                )?,
-                Diff::SetSheetState {
-                    index,
-                    old_value: _,
-                    new_value,
-                } => self.model.set_sheet_state(*index, new_value.clone())?,
+                } => todo!(),
             }
         }
 

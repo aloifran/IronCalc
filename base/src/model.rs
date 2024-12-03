@@ -416,8 +416,18 @@ impl Model {
                 // TODO: NOT IMPLEMENTED
                 CalcResult::new_error(Error::NIMPL, cell, "Arrays not implemented".to_string())
             }
-            DefinedNameKind((name, scope)) => {
-                if let Ok(Some(parsed_defined_name)) = self.get_parsed_defined_name(name, *scope) {
+            VariableKind(defined_name) => {
+                println!("{:?}", defined_name);
+                let parsed_defined_name = self
+                    .parsed_defined_names
+                    .get(&(Some(cell.sheet), defined_name.to_lowercase())) // try getting local defined name
+                    .or_else(|| {
+                        self.parsed_defined_names
+                            .get(&(None, defined_name.to_lowercase()))
+                    }); // fallback to global
+
+                println!("Parsed: {:?}", defined_name);
+                if let Some(parsed_defined_name) = parsed_defined_name {
                     match parsed_defined_name {
                         ParsedDefinedName::CellReference(reference) => {
                             self.evaluate_cell(reference)
@@ -2041,28 +2051,20 @@ impl Model {
         scope: Option<u32>,
         formula: &str,
     ) -> Result<(), String> {
-        if !is_valid_identifier(name) {
-            return Err("Invalid defined name".to_string());
-        };
         let name_upper = name.to_uppercase();
         let defined_names = &self.workbook.defined_names;
-        let sheet_id = match scope {
-            Some(index) => Some(self.workbook.worksheet(index)?.sheet_id),
-            None => None,
-        };
         // if the defined name already exist return error
         for df in defined_names {
-            if df.name.to_uppercase() == name_upper && df.sheet_id == sheet_id {
+            if df.name.to_uppercase() == name_upper && df.sheet_id == scope {
                 return Err("Defined name already exists".to_string());
             }
         }
         self.workbook.defined_names.push(DefinedName {
             name: name.to_string(),
             formula: formula.to_string(),
-            sheet_id,
+            sheet_id: scope,
         });
         self.reset_parsed_structures();
-
         Ok(())
     }
 
@@ -2070,13 +2072,9 @@ impl Model {
     pub fn delete_defined_name(&mut self, name: &str, scope: Option<u32>) -> Result<(), String> {
         let name_upper = name.to_uppercase();
         let defined_names = &self.workbook.defined_names;
-        let sheet_id = match scope {
-            Some(index) => Some(self.workbook.worksheet(index)?.sheet_id),
-            None => None,
-        };
         let mut index = None;
         for (i, df) in defined_names.iter().enumerate() {
-            if df.name.to_uppercase() == name_upper && df.sheet_id == sheet_id {
+            if df.name.to_uppercase() == name_upper && df.sheet_id == scope {
                 index = Some(i);
             }
         }
@@ -2089,7 +2087,23 @@ impl Model {
         }
     }
 
-    /// Update defined name
+    /// returns the formula for a defined name
+    pub fn get_defined_name_formula(
+        &self,
+        name: &str,
+        scope: Option<u32>,
+    ) -> Result<String, String> {
+        let name_upper = name.to_uppercase();
+        let defined_names = &self.workbook.defined_names;
+        for df in defined_names {
+            if df.name.to_uppercase() == name_upper && df.sheet_id == scope {
+                return Ok(df.formula.clone());
+            }
+        }
+        Err("Defined name not found".to_string())
+    }
+
+    /// update defined name
     pub fn update_defined_name(
         &mut self,
         name: &str,
@@ -2098,64 +2112,18 @@ impl Model {
         new_scope: Option<u32>,
         new_formula: &str,
     ) -> Result<(), String> {
-        if !is_valid_identifier(new_name) {
-            return Err("Invalid defined name".to_string());
-        };
         let name_upper = name.to_uppercase();
-        let new_name_upper = new_name.to_uppercase();
-
-        if name_upper != new_name_upper || scope != new_scope {
-            for key in self.parsed_defined_names.keys() {
-                if key.1.to_uppercase() == new_name_upper && key.0 == new_scope {
-                    return Err("Defined name already exists".to_string());
-                }
-            }
-        }
         let defined_names = &self.workbook.defined_names;
-        let sheet_id = match scope {
-            Some(index) => Some(self.workbook.worksheet(index)?.sheet_id),
-            None => None,
-        };
-
-        let new_sheet_id = match new_scope {
-            Some(index) => Some(self.workbook.worksheet(index)?.sheet_id),
-            None => None,
-        };
-
         let mut index = None;
         for (i, df) in defined_names.iter().enumerate() {
-            if df.name.to_uppercase() == name_upper && df.sheet_id == sheet_id {
+            if df.name.to_uppercase() == name_upper && df.sheet_id == scope {
                 index = Some(i);
             }
         }
         if let Some(i) = index {
             if let Some(df) = self.workbook.defined_names.get_mut(i) {
-                if new_name != df.name {
-                    // We need to rename the name in every formula:
-
-                    // Parse all formulas with the old name
-                    // All internal formulas are R1C1
-                    self.parser.set_lexer_mode(LexerMode::R1C1);
-                    let worksheets = &mut self.workbook.worksheets;
-                    for worksheet in worksheets {
-                        let cell_reference = CellReferenceRC {
-                            sheet: worksheet.get_name(),
-                            row: 1,
-                            column: 1,
-                        };
-                        let mut formulas = Vec::new();
-                        for formula in &worksheet.shared_formulas {
-                            let mut t = self.parser.parse(formula, &cell_reference);
-                            rename_defined_name_in_node(&mut t, name, scope, new_name);
-                            formulas.push(to_rc_format(&t));
-                        }
-                        worksheet.shared_formulas = formulas;
-                    }
-                    // Se the mode back to A1
-                    self.parser.set_lexer_mode(LexerMode::A1);
-                }
                 df.name = new_name.to_string();
-                df.sheet_id = new_sheet_id;
+                df.sheet_id = new_scope;
                 df.formula = new_formula.to_string();
                 self.reset_parsed_structures();
             }
