@@ -18,6 +18,7 @@
     "decimal_places_increase": "Increase decimal places",
     "decimal_places_decrease": "Decrease decimal places",
     "show_hide_grid_lines": "Show/hide grid lines",
+    "name_manager": "Name manager",
     "vertical_align_bottom": "Align bottom",
     "vertical_align_middle": " Align middle",
     "vertical_align_top": "Align top",
@@ -73,5 +74,11 @@
   "navigation": {
     "add_sheet": "Add sheet",
     "sheet_list": "Sheet list"
+  },
+  "name_manager_dialog": {
+    "help": "Learn more about Named Ranges",
+    "name": "Name",
+    "range": "Scope",
+    "scope": "Range"
   }
 }
