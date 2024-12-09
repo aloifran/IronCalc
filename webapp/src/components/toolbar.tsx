@@ -1,6 +1,7 @@
 import type {
   BorderOptions,
   HorizontalAlignment,
+  Model,
   VerticalAlignment,
 } from "@ironcalc/wasm";
 import { styled } from "@mui/material/styles";
@@ -22,6 +23,7 @@ import {
   Percent,
   Redo2,
   Strikethrough,
+  Tags,
   Type,
   Underline,
   Undo2,
@@ -34,6 +36,7 @@ import {
   DecimalPlacesIncreaseIcon,
 } from "../icons";
 import { theme } from "../theme";
+import NameManagerDialog from "./NameManagerDialog";
 import BorderPicker from "./borderPicker";
 import ColorPicker from "./colorPicker";
 import { TOOLBAR_HEIGH } from "./constants";
@@ -60,6 +63,7 @@ type ToolbarProperties = {
   onFillColorPicked: (hex: string) => void;
   onNumberFormatPicked: (numberFmt: string) => void;
   onBorderChanged: (border: BorderOptions) => void;
+  onNamedRangesUpdate: () => void;
   fillColor: string;
   fontColor: string;
   bold: boolean;
@@ -72,12 +76,14 @@ type ToolbarProperties = {
   numFmt: string;
   showGridLines: boolean;
   onToggleShowGridLines: (show: boolean) => void;
+  model: Model;
 };
 
 function Toolbar(properties: ToolbarProperties) {
   const [fontColorPickerOpen, setFontColorPickerOpen] = useState(false);
   const [fillColorPickerOpen, setFillColorPickerOpen] = useState(false);
   const [borderPickerOpen, setBorderPickerOpen] = useState(false);
+  const [nameManagerDialogOpen, setNameManagerDialogOpen] = useState(false);
 
   const fontColorButton = useRef(null);
   const fillColorButton = useRef(null);
@@ -341,6 +347,18 @@ function Toolbar(properties: ToolbarProperties) {
       >
         {properties.showGridLines ? <Grid2x2Check /> : <Grid2x2X />}
       </StyledButton>
+      <Divider />
+      <StyledButton
+        type="button"
+        $pressed={false}
+        onClick={() => {
+          setNameManagerDialogOpen(true);
+        }}
+        disabled={!canEdit}
+        title={t("toolbar.name_manager")}
+      >
+        <Tags />
+      </StyledButton>
 
       <ColorPicker
         color={properties.fontColor}
@@ -375,6 +393,33 @@ function Toolbar(properties: ToolbarProperties) {
         }}
         anchorEl={borderButton}
         open={borderPickerOpen}
+      />
+      <NameManagerDialog
+        open={nameManagerDialogOpen}
+        onClose={() => {
+          setNameManagerDialogOpen(false);
+        }}
+        onSave={() => {
+          console.log(
+            "update NamedRanges in model => properties.onNamedRangesUpdate",
+          );
+        }}
+        model={properties.model}
+        namedRanges={[
+          {
+            id: "123",
+            name: "something",
+            scope: "Workbook",
+            range: "Sheet1!A1:H5",
+          },
+          { id: "124", name: "count", scope: "Sheet 1", range: "Sheet1!B4:H8" },
+          {
+            id: "125",
+            name: "total spent",
+            scope: "Sheet 1",
+            range: "Sheet1!C2:C12",
+          },
+        ]}
       />
     </ToolbarContainer>
   );
