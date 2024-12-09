@@ -1,82 +1,92 @@
-import { Box, IconButton, MenuItem, styled, TextField } from "@mui/material";
+import type { Model, WorksheetProperties } from "@ironcalc/wasm";
+import { Box, IconButton, MenuItem, TextField, styled } from "@mui/material";
 import { Trash2 } from "lucide-react";
 
 export type NamedRangeObject = {
-	id: string,
-	name: string,
-	scope: string,
-	range: string
-}
-
-type NamedRangeProperties = {
-	// come from model
-	id: string;
-	name: string;
-	scope: string;
-	range: string;
-	// update namedRange in model
-	onChange: (id: string, field: string, value: string) => void;
+  id: string;
+  name: string;
+  scope: string;
+  range: string;
 };
 
-function NamedRange(properties: NamedRangeProperties) {
-	// define onChange in parent for updating the model and values
-	
-	// data from model
-	const scopes = [
-		{ value: "Workbook" },
-		{ value: "Sheet 1" },
-		{ value: "Invoices" },
-	];
+type NamedRangeProperties = {
+  // come from model
+  id: string;
+  name: string;
+  scope: string;
+  range: string;
+  model: Model;
+  worksheets: WorksheetProperties[];
+  // update namedRange in model
+  onChange: (id: string, field: string, value: string) => void;
+};
 
-	const handleDelete = () => {
-		// update model
-		console.log('deleted named range');	
-	};
+function NamedRange(props: NamedRangeProperties) {
+  // define onChange in parent for updating the model and values
 
-	return (
-		<StyledBox>
-			{/* this is editable only while clicking */}
-			<TextField
-				id="name"
-				variant="outlined"
-				size="small"
-				margin="normal"
-				fullWidth
-				value={properties.name}
-				onChange={(event) => properties.onChange(properties.id, "name", event.target.value)}
-			/>
-			<TextField
-				id="scope"
-				variant="outlined"
-				select
-				defaultValue="Workbook"
-				size="small"
-				margin="normal"
-				fullWidth
-				value={properties.scope}
-				onChange={(event) => properties.onChange(properties.id, "scope", event.target.value)}
-			>
-				{scopes.map((option) => (
-					<MenuItem key={option.value} value={option.value}>
-						{option.value}
-					</MenuItem>
-				))}
-			</TextField>
-			<TextField
-				id="range"
-				variant="outlined"
-				size="small"
-				margin="normal"
-				fullWidth
-				value={properties.range}
-				onChange={(event) => properties.onChange(properties.id, "range", event.target.value)}
-			/>
-			{/* remove round hover animation  */}
-			<IconButton onClick={handleDelete}>
-				<Trash2 size={16} absoluteStrokeWidth/>
-			</IconButton>
-		</StyledBox>
-	);
+  const handleDelete = () => {
+    // update model
+    console.log("deleted named range");
+  };
+
+  return (
+    <StyledBox>
+      {/* this is editable only while clicking */}
+      <TextField
+        id="name"
+        variant="outlined"
+        size="small"
+        margin="normal"
+        fullWidth
+        value={props.name}
+        onChange={(event) =>
+          props.onChange(props.id, "name", event.target.value)
+        }
+        onKeyDown={(event) => {
+          event.stopPropagation();
+        }}
+        onClick={(event) => event.stopPropagation()}
+      />
+      <TextField
+        id="scope"
+        variant="outlined"
+        select
+        defaultValue="Workbook"
+        size="small"
+        margin="normal"
+        fullWidth
+        value={props.scope}
+        onChange={(event) =>
+          props.onChange(props.id, "scope", event.target.value)
+        }
+      >
+        {props.worksheets.map((option) => (
+          <MenuItem key={option.sheet_id} value={option.name}>
+            {option.name}
+          </MenuItem>
+        ))}
+      </TextField>
+      <TextField
+        id="range"
+        variant="outlined"
+        size="small"
+        margin="normal"
+        fullWidth
+        value={props.range}
+        onChange={(event) =>
+          props.onChange(props.id, "range", event.target.value)
+        }
+        onKeyDown={(event) => {
+          event.stopPropagation();
+        }}
+        onClick={(event) => event.stopPropagation()}
+      />
+      {/* remove round hover animation  */}
+      <IconButton onClick={handleDelete}>
+        <Trash2 size={16} absoluteStrokeWidth />
+      </IconButton>
+    </StyledBox>
+  );
 }
 
 const StyledBox = styled(Box)`
