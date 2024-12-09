@@ -115,6 +115,10 @@ const Workbook = (props: { model: Model; workbookState: WorkbookState }) => {
     updateRangeStyle("num_fmt", numberFmt);
   };
 
+  const onNamedRangesUpdate = () => {
+    // update named ranges in model
+  }
+
   const onCopyStyles = () => {
     const {
       sheet,
@@ -569,6 +573,7 @@ const Workbook = (props: { model: Model; workbookState: WorkbookState }) => {
           model.setShowGridLines(sheet, show);
           setRedrawId((id) => id + 1);
         }}
+        onNamedRangesUpdate={onNamedRangesUpdate}
       />
       <FormulaBar
         cellAddress={cellAddress()}
