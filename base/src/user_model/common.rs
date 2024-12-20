@@ -13,8 +13,8 @@ use crate::{
     },
     model::Model,
     types::{
-        Alignment, BorderItem, CellType, Col, HorizontalAlignment, SheetProperties, Style,
-        VerticalAlignment,
+        Alignment, BorderItem, CellType, Col, DefinedName, HorizontalAlignment, SheetProperties,
+        Style, VerticalAlignment,
     },
     utils::is_valid_hex_color,
 };
@@ -39,6 +39,7 @@ pub struct ClipboardCell {
 pub struct Clipboard {
     pub(crate) csv: String,
     pub(crate) data: ClipboardData,
+    pub(crate) sheet: u32,
     pub(crate) range: (i32, i32, i32, i32),
 }
 
@@ -342,7 +343,7 @@ impl UserModel {
             old_value: Box::new(old_value),
         }];
 
-        let line_count = value.split("\n").count();
+        let line_count = value.split('\n').count();
         let row_height = self.model.get_row_height(sheet, row)?;
         let cell_height = (line_count as f64) * DEFAULT_ROW_HEIGHT;
         if cell_height > row_height {
@@ -713,7 +714,7 @@ impl UserModel {
 
     /// Paste `styles` in the selected area
     pub fn on_paste_styles(&mut self, styles: &[Vec<Style>]) -> Result<(), String> {
-        let styles_heigh = styles.len() as i32;
+        let styles_height = styles.len() as i32;
         let styles_width = styles[0].len() as i32;
         let sheet = if let Some(view) = self.model.workbook.views.get(&self.model.view_id) {
             view.sheet
@@ -732,13 +733,13 @@ impl UserModel {
 
         // If the pasted area is smaller than the selected area we increase it
         let [row_start, column_start, row_end, column_end] = range;
-        let last_row = row_end.max(row_start + styles_heigh - 1);
+        let last_row = row_end.max(row_start + styles_height - 1);
         let last_column = column_end.max(column_start + styles_width - 1);
 
         let mut diff_list = Vec::new();
         for row in row_start..=last_row {
             for column in column_start..=last_column {
-                let row_index = ((row - row_start) % styles_heigh) as usize;
+                let row_index = ((row - row_start) % styles_height) as usize;
                 let column_index = ((column - column_start) % styles_width) as usize;
                 let style = &styles[row_index][column_index];
                 let old_value = self.model.get_style_for_cell(sheet, row, column)?;
@@ -1520,6 +1521,7 @@ impl UserModel {
         Ok(Clipboard {
             csv,
             data,
+            sheet,
             range: (row_start, column_start, row_end, column_end),
         })
     }
@@ -1527,6 +1529,7 @@ impl UserModel {
     /// Paste text that we copied
     pub fn paste_from_clipboard(
         &mut self,
+        source_sheet: u32,
         source_range: ClipboardTuple,
         clipboard: &ClipboardData,
         is_cut: bool,
@@ -1617,17 +1620,17 @@ impl UserModel {
                     let old_value = self
                         .model
                         .workbook
-                        .worksheet(sheet)?
+                        .worksheet(source_sheet)?
                         .cell(row, column)
                         .cloned();
 
                     diff_list.push(Diff::CellClearContents {
-                        sheet,
+                        sheet: source_sheet,
                         row,
                         column,
                         old_value: Box::new(old_value),
                     });
-                    self.model.cell_clear_contents(sheet, row, column)?;
+                    self.model.cell_clear_contents(source_sheet, row, column)?;
                 }
             }
         }
@@ -1685,6 +1688,66 @@ impl UserModel {
         self.push_diff_list(diff_list);
         // select the pasted area
         self.set_selected_range(area.row, area.column, row, column)?;
+        self.evaluate_if_not_paused();
+        Ok(())
+    }
+
+    /// Returns the list of defined names
+    pub fn get_defined_name_list(&self) -> Vec<DefinedName> {
+        self.model.workbook.defined_names.clone()
+    }
+
+    /// Delete an existing defined name
+    pub fn delete_defined_name(&mut self, name: &str, scope: Option<u32>) -> Result<(), String> {
+        let old_value = self.model.get_defined_name_formula(name, scope)?;
+        let diff_list = vec![Diff::DeleteDefinedName {
+            name: name.to_string(),
+            scope,
+            old_value,
+        }];
+        self.push_diff_list(diff_list);
+        self.model.delete_defined_name(name, scope)?;
+        self.evaluate_if_not_paused();
+        Ok(())
+    }
+
+    /// Create a new defined name
+    pub fn new_defined_name(
+        &mut self,
+        name: &str,
+        scope: Option<u32>,
+        formula: &str,
+    ) -> Result<(), String> {
+        self.model.new_defined_name(name, scope, formula)?;
+        let diff_list = vec![Diff::CreateDefinedName {
+            name: name.to_string(),
+            scope,
+            value: formula.to_string(),
+        }];
+        self.push_diff_list(diff_list);
+        self.evaluate_if_not_paused();
+        Ok(())
+    }
+
+    /// Updates a defined name
+    pub fn update_defined_name(
+        &mut self,
+        name: &str,
+        scope: Option<u32>,
+        new_name: &str,
+        new_scope: Option<u32>,
+        new_formula: &str,
+    ) -> Result<(), String> {
+        let old_formula = self.model.get_defined_name_formula(name, scope)?;
+        let diff_list = vec![Diff::UpdateDefinedName {
+            name: name.to_string(),
+            scope,
+            old_formula: old_formula.to_string(),
+            new_name: new_name.to_string(),
+            new_scope,
+            new_formula: new_formula.to_string(),
+        }];
+        self.push_diff_list(diff_list);
         self.evaluate_if_not_paused();
         Ok(())
     }
@@ -1859,6 +1922,20 @@ impl UserModel {
                 } => {
                     self.model.set_show_grid_lines(*sheet, *old_value)?;
                 }
+                Diff::CreateDefinedName { name, scope, value } => todo!(),
+                Diff::DeleteDefinedName {
+                    name,
+                    scope,
+                    old_value,
+                } => todo!(),
+                Diff::UpdateDefinedName {
+                    name,
+                    scope,
+                    old_formula,
+                    new_name,
+                    new_scope,
+                    new_formula,
+                } => todo!(),
             }
         }
         if needs_evaluation {
@@ -1986,6 +2063,20 @@ impl UserModel {
                 } => {
                     self.model.set_show_grid_lines(*sheet, *new_value)?;
                 }
+                Diff::CreateDefinedName { name, scope, value } => todo!(),
+                Diff::DeleteDefinedName {
+                    name,
+                    scope,
+                    old_value,
+                } => todo!(),
+                Diff::UpdateDefinedName {
+                    name,
+                    scope,
+                    old_formula,
+                    new_name,
+                    new_scope,
+                    new_formula,
+                } => todo!(),
             }
         }
 

@@ -1,41 +1,25 @@
-import styled from "@emotion/styled";
-import { Dialog, TextField } from "@mui/material";
-import { Check } from "lucide-react";
+import { Dialog, TextField, styled } from "@mui/material";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { theme } from "../theme";
+import { theme } from "../../theme";
 
-type FormatPickerProps = {
-  className?: string;
+interface SheetRenameDialogProps {
   open: boolean;
   onClose: () => void;
-  onExited?: () => void;
-  numFmt: string;
-  onChange: (numberFmt: string) => void;
-};
+  onNameChanged: (name: string) => void;
+  defaultName: string;
+}
 
-const FormatPicker = (properties: FormatPickerProps) => {
+const SheetRenameDialog = (properties: SheetRenameDialogProps) => {
   const { t } = useTranslation();
-  const [formatCode, setFormatCode] = useState(properties.numFmt);
-
+  const [name, setName] = useState(properties.defaultName);
   const handleClose = () => {
     properties.onClose();
   };
-
-  const onSubmit = (format_code: string): void => {
-    properties.onChange(format_code);
-    properties.onClose();
-  };
   return (
-    <Dialog
-      open={properties.open}
-      onClose={properties.onClose}
-      PaperProps={{
-        style: { minWidth: "280px" },
-      }}
-    >
+    <Dialog open={properties.open} onClose={properties.onClose}>
       <StyledDialogTitle>
-        {t("num_fmt.title")}
+        {t("sheet_rename.title")}
         <Cross onClick={handleClose} onKeyDown={() => {}}>
           <svg
             width="16"
@@ -60,27 +44,32 @@ const FormatPicker = (properties: FormatPickerProps) => {
           </svg>
         </Cross>
       </StyledDialogTitle>
-
       <StyledDialogContent>
         <StyledTextField
           autoFocus
-          defaultValue={properties.numFmt}
-          name="format_code"
-          onChange={(event) => setFormatCode(event.target.value)}
+          defaultValue={properties.defaultName}
+          onClick={(event) => event.stopPropagation()}
           onKeyDown={(event) => {
             event.stopPropagation();
+            if (event.key === "Enter") {
+              properties.onNameChanged(name);
+              properties.onClose();
+            }
+          }}
+          onChange={(event) => {
+            setName(event.target.value);
           }}
           spellCheck="false"
-          onClick={(event) => event.stopPropagation()}
-          onFocus={(event) => event.target.select()}
+          onPaste={(event) => event.stopPropagation()}
         />
       </StyledDialogContent>
       <DialogFooter>
-        <StyledButton onClick={() => onSubmit(formatCode)}>
-          <Check
-            style={{ width: "16px", height: "16px", marginRight: "8px" }}
-          />
-          {t("num_fmt.save")}
+        <StyledButton
+          onClick={() => {
+            properties.onNameChanged(name);
+          }}
+        >
+          {t("sheet_rename.rename")}
         </StyledButton>
       </DialogFooter>
     </Dialog>
@@ -119,7 +108,6 @@ const StyledDialogContent = styled("div")`
 
 const StyledTextField = styled(TextField)`
   width: 100%;
-  min-width: 320px;
   border-radius: 4px;
   overflow: hidden;
   & .MuiInputBase-input {
@@ -162,4 +150,4 @@ const StyledButton = styled("div")`
   }
 `;
 
-export default FormatPicker;
+export default SheetRenameDialog;

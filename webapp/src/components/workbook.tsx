@@ -6,6 +6,7 @@ import type {
 } from "@ironcalc/wasm";
 import { styled } from "@mui/material/styles";
 import { useCallback, useEffect, useRef, useState } from "react";
+import SheetTabBar from "./SheetTabBar/SheetTabBar";
 import {
   COLUMN_WIDTH_SCALE,
   LAST_COLUMN,
@@ -16,7 +17,6 @@ import {
   getNewClipboardId,
 } from "./clipboard";
 import FormulaBar from "./formulabar";
-import Navigation from "./navigation/navigation";
 import Toolbar from "./toolbar";
 import useKeyboardNavigation from "./useKeyboardNavigation";
 import { type NavigationKey, getCellAddress } from "./util";
@@ -394,7 +394,12 @@ const Workbook = (props: { model: Model; workbookState: WorkbookState }) => {
             }
             data.set(Number.parseInt(row, 10), rowMap);
           }
-          model.pasteFromClipboard(source.area, data, source.type === "cut");
+          model.pasteFromClipboard(
+            source.sheet,
+            source.area,
+            data,
+            source.type === "cut",
+          );
           setRedrawId((id) => id + 1);
         } else if (mimeType === "text/plain") {
           const {
@@ -420,6 +425,7 @@ const Workbook = (props: { model: Model; workbookState: WorkbookState }) => {
       }}
       onCopy={(event: React.ClipboardEvent) => {
         const data = model.copyToClipboard();
+        const sheet = model.getSelectedSheet();
         // '2024-10-18T14:07:37.599Z'
 
         let clipboardId = sessionStorage.getItem(
@@ -447,6 +453,7 @@ const Workbook = (props: { model: Model; workbookState: WorkbookState }) => {
           type: "copy",
           area: data.range,
           sheetData,
+          sheet,
           clipboardId,
         });
         event.clipboardData.setData("text/plain", data.csv);
@@ -456,6 +463,7 @@ const Workbook = (props: { model: Model; workbookState: WorkbookState }) => {
       }}
       onCut={(event: React.ClipboardEvent) => {
         const data = model.copyToClipboard();
+        const sheet = model.getSelectedSheet();
         // '2024-10-18T14:07:37.599Z'
 
         let clipboardId = sessionStorage.getItem(
@@ -483,6 +491,7 @@ const Workbook = (props: { model: Model; workbookState: WorkbookState }) => {
           type: "cut",
           area: data.range,
           sheetData,
+          sheet,
           clipboardId,
         });
         event.clipboardData.setData("text/plain", data.csv);
@@ -577,7 +586,7 @@ const Workbook = (props: { model: Model; workbookState: WorkbookState }) => {
         }}
       />
 
-      <Navigation
+      <SheetTabBar
         sheets={info}
         selectedIndex={model.getSelectedSheet()}
         workbookState={workbookState}

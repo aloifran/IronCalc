@@ -169,20 +169,36 @@ clipboard_types = r"""
 
 paste_from_clipboard = r"""
 /**
+* @param {number} source_sheet
 * @param {any} source_range
 * @param {any} clipboard
 * @param {boolean} is_cut
 */
-  pasteFromClipboard(source_range: any, clipboard: any, is_cut: boolean): void;
+  pasteFromClipboard(source_sheet: number, source_range: any, clipboard: any, is_cut: boolean): void;
 """
 
 paste_from_clipboard_types = r"""
 /**
+* @param {number} source_sheet
 * @param {[number, number, number, number]} source_range
 * @param {ClipboardData} clipboard
 * @param {boolean} is_cut
 */
-  pasteFromClipboard(source_range: [number, number, number, number], clipboard: ClipboardData, is_cut: boolean): void;
+  pasteFromClipboard(source_sheet: number, source_range: [number, number, number, number], clipboard: ClipboardData, is_cut: boolean): void;
+"""
+
+defined_name_list = r"""
+/**
+* @returns {any}
+*/
+  getDefinedNameList(): any;
+"""
+
+defined_name_list_types = r"""
+/**
+* @returns {DefinedName[]}
+*/
+  getDefinedNameList(): DefinedName[];
 """
 
 def fix_types(text):
@@ -198,6 +214,7 @@ def fix_types(text):
     text = text.replace(paste_csv_string, paste_csv_string_types)
     text = text.replace(clipboard, clipboard_types)
     text = text.replace(paste_from_clipboard, paste_from_clipboard_types)
+    text = text.replace(defined_name_list, defined_name_list_types)
     with open("types.ts") as f:
         types_str = f.read()
         header_types = "{}\n\n{}".format(header, types_str)

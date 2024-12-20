@@ -1,12 +1,13 @@
 import { Button, Menu, MenuItem, styled } from "@mui/material";
 import { ChevronDown } from "lucide-react";
 import { useRef, useState } from "react";
+import { theme } from "../../theme";
 import ColorPicker from "../colorPicker";
 import { isInReferenceMode } from "../editor/util";
 import type { WorkbookState } from "../workbookState";
-import { SheetRenameDialog } from "./menus";
+import SheetRenameDialog from "./SheetRenameDialog";
 
-interface SheetProps {
+interface SheetTabProps {
   name: string;
   color: string;
   selected: boolean;
@@ -17,7 +18,7 @@ interface SheetProps {
   workbookState: WorkbookState;
 }
 
-function Sheet(props: SheetProps) {
+function SheetTab(props: SheetTabProps) {
   const { name, color, selected, workbookState, onSelected } = props;
   const [anchorEl, setAnchorEl] = useState<null | HTMLButtonElement>(null);
   const [colorPickerOpen, setColorPickerOpen] = useState(false);
@@ -38,8 +39,9 @@ function Sheet(props: SheetProps) {
   };
   return (
     <>
-      <Wrapper
-        style={{ borderBottomColor: color, fontWeight: selected ? 600 : 400 }}
+      <TabWrapper
+        $color={color}
+        $selected={selected}
         onClick={(event) => {
           onSelected();
           event.stopPropagation();
@@ -55,11 +57,11 @@ function Sheet(props: SheetProps) {
         }}
         ref={colorButton}
       >
-        <Name>{name}</Name>
+        <Name onDoubleClick={handleOpenRenameDialog}>{name}</Name>
         <StyledButton onClick={handleOpen}>
           <ChevronDown />
         </StyledButton>
-      </Wrapper>
+      </TabWrapper>
       <StyledMenu
         anchorEl={anchorEl}
         open={open}
@@ -100,8 +102,8 @@ function Sheet(props: SheetProps) {
         </StyledMenuItem>
       </StyledMenu>
       <SheetRenameDialog
-        isOpen={renameDialogOpen}
-        close={handleCloseRenameDialog}
+        open={renameDialogOpen}
+        onClose={handleCloseRenameDialog}
         defaultName={name}
         onNameChanged={(newName) => {
           props.onRenamed(newName);
@@ -124,10 +126,39 @@ function Sheet(props: SheetProps) {
   );
 }
 
-const StyledMenu = styled(Menu)``;
+const StyledMenu = styled(Menu)`
+  & .MuiPaper-root {
+    border-radius: 8px;
+    padding: 4px 0px;
+    margin-left: -4px;
+  }
+  & .MuiList-root {
+    padding: 0;
+  }
+`;
 
 const StyledMenuItem = styled(MenuItem)`
+  display: flex;
+  justify-content: space-between;
   font-size: 12px;
+  width: calc(100% - 8px);
+  margin: 0px 4px;
+  border-radius: 4px;
+  padding: 8px;
+  height: 32px;
+`;
+
+const TabWrapper = styled("div")<{ $color: string; $selected: boolean }>`
+  display: flex;
+  margin-right: 12px;
+  border-bottom: 3px solid ${(props) => props.$color};
+  line-height: 37px;
+  padding: 0px 4px;
+  align-items: center;
+  cursor: pointer;
+  font-weight: ${(props) => (props.$selected ? 600 : 400)};
+  background-color: ${(props) =>
+    props.$selected ? `${theme.palette.grey[50]}80` : "transparent"};
 `;
 
 const StyledButton = styled(Button)`
@@ -137,26 +168,27 @@ const StyledButton = styled(Button)`
   padding: 0px;
   color: inherit;
   font-weight: inherit;
+  &:hover {
+    background-color: transparent;
+  }
+  &:active {
+    background-color: transparent;
+  }
   svg {
     width: 15px;
     height: 15px;
+    transition: transform 0.2s;
   }
-`;
-
-const Wrapper = styled("div")`
-  display: flex;
-  margin-left: 20px;
-  border-bottom: 3px solid;
-  border-top: 3px solid white;
-  line-height: 34px;
-  align-items: center;
-  cursor: pointer;
+  &:hover svg {
+    transform: translateY(2px);
+  }
 `;
 
 const Name = styled("div")`
   font-size: 12px;
   margin-right: 5px;
   text-wrap: nowrap;
+  user-select: none;
 `;
 
-export default Sheet;
+export default SheetTab;

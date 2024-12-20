@@ -2,14 +2,15 @@ import { styled } from "@mui/material";
 import { Menu, Plus } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { NAVIGATION_HEIGH } from "../constants";
+import { theme } from "../../theme";
+import { NAVIGATION_HEIGHT } from "../constants";
 import { StyledButton } from "../toolbar";
 import type { WorkbookState } from "../workbookState";
-import SheetListMenu from "./menus";
-import Sheet from "./sheet";
+import SheetListMenu from "./SheetListMenu";
+import SheetTab from "./SheetTab";
 import type { SheetOptions } from "./types";
 
-export interface NavigationProps {
+export interface SheetTabBarProps {
   sheets: SheetOptions[];
   selectedIndex: number;
   workbookState: WorkbookState;
@@ -20,7 +21,7 @@ export interface NavigationProps {
   onSheetDeleted: () => void;
 }
 
-function Navigation(props: NavigationProps) {
+function SheetTabBar(props: SheetTabBarProps) {
   const { t } = useTranslation();
   const { workbookState, onSheetSelected, sheets, selectedIndex } = props;
   const [anchorEl, setAnchorEl] = useState<null | HTMLButtonElement>(null);
@@ -34,24 +35,27 @@ function Navigation(props: NavigationProps) {
 
   return (
     <Container>
-      <StyledButton
-        title={t("navigation.add_sheet")}
-        $pressed={false}
-        onClick={props.onAddBlankSheet}
-      >
-        <Plus />
-      </StyledButton>
-      <StyledButton
-        onClick={handleClick}
-        title={t("navigation.sheet_list")}
-        $pressed={false}
-      >
-        <Menu />
-      </StyledButton>
+      <LeftButtonsContainer>
+        <StyledButton
+          title={t("navigation.add_sheet")}
+          $pressed={false}
+          onClick={props.onAddBlankSheet}
+        >
+          <Plus />
+        </StyledButton>
+        <StyledButton
+          onClick={handleClick}
+          title={t("navigation.sheet_list")}
+          $pressed={false}
+        >
+          <Menu />
+        </StyledButton>
+      </LeftButtonsContainer>
+      <VerticalDivider />
       <Sheets>
         <SheetInner>
           {sheets.map((tab, index) => (
-            <Sheet
+            <SheetTab
               key={tab.sheetId}
               name={tab.name}
               color={tab.color}
@@ -76,8 +80,8 @@ function Navigation(props: NavigationProps) {
       </Advert>
       <SheetListMenu
         anchorEl={anchorEl}
-        isOpen={open}
-        close={handleClose}
+        open={open}
+        onClose={handleClose}
         sheetOptionsList={sheets}
         onSheetSelected={(index) => {
           onSheetSelected(index);
@@ -91,22 +95,29 @@ function Navigation(props: NavigationProps) {
 
 // Note I have to specify the font-family in every component that can be considered stand-alone
 const Container = styled("div")`
+  display: flex;
+  flex-direction: row;
   position: absolute;
   bottom: 0px;
   left: 0px;
   right: 0px;
   display: flex;
-  height: ${NAVIGATION_HEIGH}px;
+  height: ${NAVIGATION_HEIGHT}px;
   align-items: center;
-  padding-left: 12px;
+  padding: 0px 12px;
   font-family: Inter;
-  background-color: #fff;
-  border-top: 1px solid #E0E0E0;
+  background-color: ${theme.palette.common.white};
+  border-top: 1px solid ${theme.palette.grey["300"]};
 `;
 
 const Sheets = styled("div")`
   flex-grow: 2;
   overflow: hidden;
+  overflow-x: auto;
+  scrollbar-width: none;
+  padding-left: 12px;
+  display: flex;
+  flex-direction: row;
 `;
 
 const SheetInner = styled("div")`
@@ -114,10 +125,35 @@ const SheetInner = styled("div")`
 `;
 
 const Advert = styled("a")`
-  color: #f2994a;
-  margin-right: 12px;
+  display: flex;
+  align-items: center;
+  color: ${theme.palette.primary.main};
+  padding: 0px 0px 0px 12px;
   font-size: 12px;
   text-decoration: none;
+  border-left: 1px solid ${theme.palette.grey["300"]};
+  transition: color 0.2s ease-in-out;
+  &:hover {
+    text-decoration: underline;
+  }
+  @media (max-width: 769px) {
+    height: 100%;
+  }
 `;
 
-export default Navigation;
+const LeftButtonsContainer = styled("div")`
+  display: flex;
+  flex-direction: row;
+  gap: 4px;
+  padding-right: 12px;
+`;
+
+const VerticalDivider = styled("div")`
+  height: 100%;
+  width: 0px;
+  @media (max-width: 769px) {
+    border-right: 1px solid ${theme.palette.grey["200"]};
+  }
+`;
+
+export default SheetTabBar;

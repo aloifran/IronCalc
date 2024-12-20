@@ -1,66 +1,16 @@
-import {
-  Button,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogTitle,
-  TextField,
-  styled,
-} from "@mui/material";
+import { styled } from "@mui/material";
 import Menu from "@mui/material/Menu";
 import MenuItem from "@mui/material/MenuItem";
 import { Check } from "lucide-react";
-import { useState } from "react";
-import { useTranslation } from "react-i18next";
 import type { SheetOptions } from "./types";
 
 function isWhiteColor(color: string): boolean {
   return ["#FFF", "#FFFFFF"].includes(color);
 }
 
-interface SheetRenameDialogProps {
-  isOpen: boolean;
-  close: () => void;
-  onNameChanged: (name: string) => void;
-  defaultName: string;
-}
-
-export const SheetRenameDialog = (properties: SheetRenameDialogProps) => {
-  const { t } = useTranslation();
-  const [name, setName] = useState(properties.defaultName);
-  return (
-    <Dialog open={properties.isOpen} onClose={properties.close}>
-      <DialogTitle>{t("sheet_rename.title")}</DialogTitle>
-      <DialogContent dividers>
-        <TextField
-          defaultValue={properties.defaultName}
-          label={t("sheet_rename.label")}
-          onClick={(event) => event.stopPropagation()}
-          onKeyDown={(event) => {
-            event.stopPropagation();
-          }}
-          onChange={(event) => {
-            setName(event.target.value);
-          }}
-          spellCheck="false"
-        />
-      </DialogContent>
-      <DialogActions>
-        <Button
-          onClick={() => {
-            properties.onNameChanged(name);
-          }}
-        >
-          {t("sheet_rename.rename")}
-        </Button>
-      </DialogActions>
-    </Dialog>
-  );
-};
-
 interface SheetListMenuProps {
-  isOpen: boolean;
-  close: () => void;
+  open: boolean;
+  onClose: () => void;
   anchorEl: HTMLButtonElement | null;
   onSheetSelected: (index: number) => void;
   sheetOptionsList: SheetOptions[];
@@ -69,8 +19,8 @@ interface SheetListMenuProps {
 
 const SheetListMenu = (properties: SheetListMenuProps) => {
   const {
-    isOpen,
-    close,
+    open,
+    onClose,
     anchorEl,
     onSheetSelected,
     sheetOptionsList,
@@ -81,8 +31,8 @@ const SheetListMenu = (properties: SheetListMenuProps) => {
 
   return (
     <StyledMenu
-      open={isOpen}
-      onClose={close}
+      open={open}
+      onClose={onClose}
       anchorEl={anchorEl}
       anchorOrigin={{
         vertical: "top",
