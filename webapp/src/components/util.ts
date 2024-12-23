@@ -1,6 +1,10 @@
 import type { Area, Cell } from "./types";
 
-import { columnNameFromNumber } from "@ironcalc/wasm";
+import {
+  type SelectedView,
+  type WorksheetProperties,
+  columnNameFromNumber,
+} from "@ironcalc/wasm";
 
 /**
  *  Returns true if the keypress should start editing
@@ -57,7 +61,38 @@ export function rangeToStr(
   if (rowStart === rowEnd && columnStart === columnEnd) {
     return `${sheetName}${columnNameFromNumber(columnStart)}${rowStart}`;
   }
-  return `${sheetName}${columnNameFromNumber(
-    columnStart,
-  )}${rowStart}:${columnNameFromNumber(columnEnd)}${rowEnd}`;
+  return `${sheetName}${columnNameFromNumber(columnStart)}${rowStart}:${columnNameFromNumber(
+    columnEnd,
+  )}${rowEnd}`;
+}
+
+// If we want to show sheet referenceName in definedName
+export function getFullRangeToString(
+  selectedView: SelectedView,
+  worksheets: WorksheetProperties[],
+): string {
+  // order of values is confusing compared to rangeToStr range type, needs refactoring for consistency
+  const [rowStart, columnStart, rowEnd, columnEnd] = selectedView.range;
+  const sheetNames = worksheets.map((s) => s.name);
+  const sheetName = `${sheetNames[selectedView.sheet]}!`;
+
+  if (rowStart === rowEnd && columnStart === columnEnd) {
+    return `${sheetName}${columnNameFromNumber(columnStart)}${rowStart}`;
+  }
+  return `${sheetName}${columnNameFromNumber(columnStart)}${rowStart}:${columnNameFromNumber(
+    columnEnd,
+  )}${rowEnd}`;
+}
+
+// If we dont want to show sheet referenceName in definedName
+export function getShortRangeToString(selectedView: SelectedView): string {
+  // order of values is confusing compared to rangeToStr range type, needs refactoring for consistency
+  const [rowStart, columnStart, rowEnd, columnEnd] = selectedView.range;
+
+  if (rowStart === rowEnd && columnStart === columnEnd) {
+    return `${columnNameFromNumber(columnStart)}${rowStart}`;
+  }
+  return `${columnNameFromNumber(columnStart)}${rowStart}:${columnNameFromNumber(
+    columnEnd,
+  )}${rowEnd}`;
 }
