@@ -1,4 +1,4 @@
-import type { Model } from "@ironcalc/wasm";
+import type { DefinedName, Model } from "@ironcalc/wasm";
 import {
   Box,
   Button,
@@ -7,93 +7,132 @@ import {
   DialogContent,
   DialogTitle,
   IconButton,
+  Stack,
   styled,
 } from "@mui/material";
 import { t } from "i18next";
-import { BookOpen, X } from "lucide-react";
-import { useState } from "react";
+import { BookOpen, Check, X } from "lucide-react";
+import { useEffect, useState } from "react";
 import NamedRange from "./NamedRange";
-import type { NamedRangeObject } from "./NamedRange";
+import { getShortRangeToString } from "./util";
 
 type NameManagerDialogProperties = {
   onClose: () => void;
-  onSave: () => void;
   open: boolean;
-  namedRanges: NamedRangeObject[]; // data from model
   model: Model;
 };
 
 function NameManagerDialog(props: NameManagerDialogProperties) {
-  // initialize with data from model
-  const [namedRangesLocal, setNamedRangesLocal] = useState(props.namedRanges);
+  const [definedNamesLocal, setDefinedNamesLocal] = useState<DefinedName[]>();
+  const [definedName, setDefinedName] = useState<DefinedName>({
+    name: "",
+    scope: 0,
+    formula: "",
+  });
 
-  const handleClose = () => {
-    props.onClose();
-  };
+  // render named ranges from model
+  useEffect(() => {
+    const definedNamesModel = props.model.getDefinedNameList();
+    setDefinedNamesLocal(definedNamesModel);
+    console.log("definedNamesModel EFFECT", definedNamesModel);
+  });
 
-  // update child component values in model
   const handleSave = () => {
-    props.onSave(); // => onNamedRangesUpdate from toolbar
+    console.log("SAVE DIALOG", definedName);
+    // create newDefinedName and close
+    // props.model.newDefinedName(
+    // 	definedName.name,
+    // 	definedName.scope,
+    // 	definedName.formula,
+    // );
     props.onClose();
   };
 
-  //! Why are fields editable only while clicking them?
-  // update child component values in UI
-  const handleChange = (id: string, field: string, value: string) => {
-    console.log("change:", id, field, value);
+  const handleChange = (field: keyof DefinedName, value: string | number) => {
+    setDefinedName((prev: DefinedName) => ({
+      ...prev,
+      [field]: value,
+    }));
+  };
 
-    // previous array elements, plus updated value
-    setNamedRangesLocal((prev) =>
-      prev.map((namedRange) =>
-        namedRange.id === id ? { ...namedRange, [field]: value } : namedRange,
-      ),
-    );
+  const handleDelete = () => {
+    console.log("definedName marked for deletion");
+  };
+
+  const formatFormula = (): string => {
+    const selectedView = props.model.getSelectedView();
+
+    return getShortRangeToString(selectedView);
   };
 
   return (
     <StyledDialog
       open={props.open}
       onClose={props.onClose}
-      maxWidth="md"
-      fullWidth
+      maxWidth={false}
       scroll="paper"
     >
       <StyledDialogTitle>
         Named Ranges
-        <IconButton onClick={handleClose}>
+        <IconButton onClick={() => props.onClose()}>
           <X size={16} />
         </IconButton>
       </StyledDialogTitle>
-      <DialogContent dividers>
-        {namedRangesLocal.map((e) => (
+      <StyledDialogContent dividers>
+        <StyledRangesHeader>
+          <Box width="171px">{t("name_manager_dialog.name")}</Box>
+          <Box width="171px">{t("name_manager_dialog.range")}</Box>
+          <Box width="171px">{t("name_manager_dialog.scope")}</Box>
+        </StyledRangesHeader>
+        {definedNamesLocal?.map((definedName) => (
           <NamedRange
             worksheets={props.model.getWorksheetsProperties()}
-            name={e.name}
-            scope={e.scope}
-            range={e.range}
-            id={e.id}
-            key={e.id}
-            onChange={handleChange}
+            name={definedName.name}
+            scope={definedName.scope}
+            formula={definedName.formula}
+            key={definedName.name}
             model={props.model}
+            onChange={handleChange}
+            onDelete={handleDelete}
           />
         ))}
-      </DialogContent>
+        <NamedRange
+          worksheets={props.model.getWorksheetsProperties()}
+          formula={formatFormula()}
+          onChange={handleChange}
+          model={props.model}
+        />
+      </StyledDialogContent>
       <StyledDialogActions>
-        <Box display="flex" alignItems="center">
-          <BookOpen
-            color="grey"
-            style={{ width: 16, height: 16, marginLeft: 12, marginRight: 8 }}
-          />
+        <Box display="flex" alignItems="center" gap={"8px"}>
+          <BookOpen color="grey" size={16} />
           <span style={{ fontSize: "12px", fontFamily: "Inter" }}>
             {t("name_manager_dialog.help")}
           </span>
         </Box>
-        <Box display="flex" gap="10px">
-          <Button onClick={handleClose} variant="contained" color="info">
+        <Box display="flex" gap="8px" width={"155px"}>
+          {/* change hover color? */}
+          <Button
+            onClick={() => props.onClose()}
+            variant="contained"
+            disableElevation
+            color="info"
+            sx={{
+              bgcolor: (theme): string => theme.palette.grey["200"],
+              color: (theme): string => theme.palette.grey["700"],
+              textTransform: "none",
+            }}
+          >
             Cancel
           </Button>
-          <Button onClick={handleSave} variant="contained">
-            Save changes
+          <Button
+            onClick={handleSave}
+            variant="contained"
+            disableElevation
+            sx={{ textTransform: "none" }}
+            startIcon={<Check size={16} />}
+          >
+            Save
           </Button>
         </Box>
       </StyledDialogActions>
@@ -103,13 +142,13 @@ function NameManagerDialog(props: NameManagerDialogProperties) {
 
 const StyledDialog = styled(Dialog)(() => ({
   "& .MuiPaper-root": {
-    maxHeight: "60%",
-    minHeight: "40%",
+    height: "380px",
+    minWidth: "620px",
   },
 }));
 
-// font-weight: 600 is too bold compared to design, should be between 500 & 600
 const StyledDialogTitle = styled(DialogTitle)`
+padding: 12px 20px;
 font-size: 14px;
 font-weight: 600;
 display: flex;
@@ -117,7 +156,24 @@ align-items: center;
 justify-content: space-between;
 `;
 
+const StyledDialogContent = styled(DialogContent)`
+display: flex;
+flex-direction: column;
+gap: 12px;
+padding: 20px 12px 20px 20px;
+`;
+
+const StyledRangesHeader = styled(Stack)(({ theme }) => ({
+  flexDirection: "row",
+  gap: "12px",
+  fontFamily: theme.typography.fontFamily,
+  fontSize: "12px",
+  fontWeight: "700",
+  color: theme.palette.info.main,
+}));
+
 const StyledDialogActions = styled(DialogActions)`
+padding: 12px 20px;
 height: 40px;
 display: flex;
 align-items: center;

@@ -398,27 +398,7 @@ function Toolbar(properties: ToolbarProperties) {
         onClose={() => {
           setNameManagerDialogOpen(false);
         }}
-        onSave={() => {
-          console.log(
-            "update NamedRanges in model => properties.onNamedRangesUpdate",
-          );
-        }}
         model={properties.model}
-        namedRanges={[
-          {
-            id: "123",
-            name: "something",
-            scope: "Workbook",
-            range: "Sheet1!A1:H5",
-          },
-          { id: "124", name: "count", scope: "Sheet 1", range: "Sheet1!B4:H8" },
-          {
-            id: "125",
-            name: "total spent",
-            scope: "Sheet 1",
-            range: "Sheet1!C2:C12",
-          },
-        ]}
       />
     </ToolbarContainer>
   );
