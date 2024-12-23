@@ -78,6 +78,9 @@
 		"sheet_list": "Sheet list"
 	},
 	"name_manager_dialog": {
-		"help": "Learn more about Named Ranges"
+		"help": "Learn more about Named Ranges",
+		"name": "Name",
+		"range": "Scope",
+		"scope": "Range"
 	}
 }
