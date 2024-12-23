@@ -114,6 +114,16 @@ impl Model {
         self.model.delete_sheet(sheet).map_err(to_js_error)
     }
 
+    #[wasm_bindgen(js_name = "hideSheet")]
+    pub fn hide_sheet(&mut self, sheet: u32) -> Result<(), JsError> {
+        self.model.hide_sheet(sheet).map_err(to_js_error)
+    }
+
+    #[wasm_bindgen(js_name = "unhideSheet")]
+    pub fn unhide_sheet(&mut self, sheet: u32) -> Result<(), JsError> {
+        self.model.unhide_sheet(sheet).map_err(to_js_error)
+    }
+
     #[wasm_bindgen(js_name = "renameSheet")]
     pub fn rename_sheet(&mut self, sheet: u32, name: &str) -> Result<(), JsError> {
         self.model.rename_sheet(sheet, name).map_err(to_js_error)
@@ -553,15 +563,16 @@ impl Model {
 
     #[wasm_bindgen(js_name = "getDefinedNameList")]
     pub fn get_defined_name_list(&self) -> Result<JsValue, JsError> {
-        let data: Vec<DefinedName> =
-            self.model
-                .get_defined_name_list()
-                .iter()
-                .map(|s| DefinedName {
-                    name: s.name.to_string(),
-                    scope: s.sheet_id,
-                    formula: s.formula.to_string(),
-                }).collect();
+        let data: Vec<DefinedName> = self
+            .model
+            .get_defined_name_list()
+            .iter()
+            .map(|s| DefinedName {
+                name: s.name.to_string(),
+                scope: s.sheet_id,
+                formula: s.formula.to_string(),
+            })
+            .collect();
         // Ok(data)
         serde_wasm_bindgen::to_value(&data).map_err(|e| to_js_error(e.to_string()))
     }

@@ -1,4 +1,5 @@
 import { Button, Menu, MenuItem, styled } from "@mui/material";
+import type { MenuItemProps } from "@mui/material";
 import { ChevronDown } from "lucide-react";
 import { useRef, useState } from "react";
 import { theme } from "../../theme";
@@ -14,7 +15,9 @@ interface SheetTabProps {
   onSelected: () => void;
   onColorChanged: (hex: string) => void;
   onRenamed: (name: string) => void;
+  canDelete: boolean;
   onDeleted: () => void;
+  onHideSheet: () => void;
   workbookState: WorkbookState;
 }
 
@@ -92,13 +95,22 @@ function SheetTab(props: SheetTabProps) {
           Change Color
         </StyledMenuItem>
         <StyledMenuItem
+          disabled={!props.canDelete}
           onClick={() => {
             props.onDeleted();
             handleClose();
           }}
         >
-          {" "}
           Delete
+        </StyledMenuItem>
+        <StyledMenuItem
+          disabled={!props.canDelete}
+          onClick={() => {
+            props.onHideSheet();
+            handleClose();
+          }}
+        >
+          Hide sheet
         </StyledMenuItem>
       </StyledMenu>
       <SheetRenameDialog
@@ -137,16 +149,19 @@ const StyledMenu = styled(Menu)`
   }
 `;
 
-const StyledMenuItem = styled(MenuItem)`
-  display: flex;
-  justify-content: space-between;
-  font-size: 12px;
-  width: calc(100% - 8px);
-  margin: 0px 4px;
-  border-radius: 4px;
-  padding: 8px;
-  height: 32px;
-`;
+const StyledMenuItem = styled(MenuItem)<MenuItemProps>(() => ({
+  display: "flex",
+  justifyContent: "space-between",
+  fontSize: "12px",
+  width: "calc(100% - 8px)",
+  margin: "0px 4px",
+  borderRadius: "4px",
+  padding: "8px",
+  height: "32px",
+  "&:disabled": {
+    color: "#BDBDBD",
+  },
+}));
 
 const TabWrapper = styled("div")<{ $color: string; $selected: boolean }>`
   display: flex;

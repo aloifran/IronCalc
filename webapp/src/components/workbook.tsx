@@ -5,7 +5,9 @@ import type {
   WorksheetProperties,
 } from "@ironcalc/wasm";
 import { styled } from "@mui/material/styles";
+import { PaintRoller } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
+import ReactDOMServer from "react-dom/server";
 import SheetTabBar from "./SheetTabBar/SheetTabBar";
 import {
   COLUMN_WIDTH_SCALE,
@@ -32,8 +34,8 @@ const Workbook = (props: { model: Model; workbookState: WorkbookState }) => {
   const setRedrawId = useState(0)[1];
   const info = model
     .getWorksheetsProperties()
-    .map(({ name, color, sheet_id }: WorksheetProperties) => {
-      return { name, color: color ? color : "#FFF", sheetId: sheet_id };
+    .map(({ name, color, sheet_id, state }: WorksheetProperties) => {
+      return { name, color: color ? color : "#FFF", sheetId: sheet_id, state };
     });
   const focusWorkbook = useCallback(() => {
     if (rootRef.current) {
@@ -136,7 +138,15 @@ const Workbook = (props: { model: Model; workbookState: WorkbookState }) => {
     const el = rootRef.current?.getElementsByClassName("sheet-container")[0];
     if (el) {
       (el as HTMLElement).style.cursor =
-        `url('data:image/svg+xml;utf8,<svg data-v-56bd7dfc="" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-paintbrush-vertical"><path d="M10 2v2"></path><path d="M14 2v4"></path><path d="M17 2a1 1 0 0 1 1 1v9H6V3a1 1 0 0 1 1-1z"></path><path d="M6 12a1 1 0 0 0-1 1v1a2 2 0 0 0 2 2h2a1 1 0 0 1 1 1v2.9a2 2 0 1 0 4 0V17a1 1 0 0 1 1-1h2a2 2 0 0 0 2-2v-1a1 1 0 0 0-1-1"></path></svg>'), auto`;
+        `url('data:image/svg+xml;utf8,${encodeURIComponent(
+          ReactDOMServer.renderToString(
+            <PaintRoller
+              width={24}
+              height={24}
+              style={{ transform: "rotate(-8deg)" }}
+            />,
+          ),
+        )}'), auto`;
     }
   };
 
@@ -586,6 +596,9 @@ const Workbook = (props: { model: Model; workbookState: WorkbookState }) => {
         selectedIndex={model.getSelectedSheet()}
         workbookState={workbookState}
         onSheetSelected={(sheet: number): void => {
+          if (info[sheet].state !== "visible") {
+            model.unhideSheet(sheet);
+          }
           model.setSelectedSheet(sheet);
           setRedrawId((value) => value + 1);
         }}
@@ -614,6 +627,11 @@ const Workbook = (props: { model: Model; workbookState: WorkbookState }) => {
         onSheetDeleted={(): void => {
           const selectedSheet = model.getSelectedSheet();
           model.deleteSheet(selectedSheet);
+          setRedrawId((value) => value + 1);
+        }}
+        onHideSheet={(): void => {
+          const selectedSheet = model.getSelectedSheet();
+          model.hideSheet(selectedSheet);
           setRedrawId((value) => value + 1);
         }}
       />
