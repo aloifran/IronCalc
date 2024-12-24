@@ -1,4 +1,5 @@
 use serde::Serialize;
+use serde::Serialize;
 use wasm_bindgen::{
     prelude::{wasm_bindgen, JsError},
     JsValue,
@@ -28,6 +29,13 @@ pub fn column_name_from_number(column: i32) -> Result<String, JsError> {
         Some(c) => Ok(c),
         None => Err(JsError::new("Invalid column number")),
     }
+}
+
+#[derive(Serialize)]
+struct DefinedName {
+    name: String,
+    scope: Option<u32>,
+    formula: String,
 }
 
 #[derive(Serialize)]
