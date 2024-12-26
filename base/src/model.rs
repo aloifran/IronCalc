@@ -74,6 +74,7 @@ pub(crate) enum CellState {
 
 /// A parsed formula for a defined name
 #[derive(Clone)]
+#[derive(Clone)]
 pub(crate) enum ParsedDefinedName {
     /// CellReference (`=C4`)
     CellReference(CellReferenceIndex),
@@ -425,6 +426,7 @@ impl Model {
                 {
                     match parsed_defined_name {
                         ParsedDefinedName::CellReference(reference) => {
+                            self.evaluate_cell(reference)
                             self.evaluate_cell(reference)
                         }
                         ParsedDefinedName::RangeReference(range) => CalcResult::Range {
