@@ -9,6 +9,15 @@ import {
   IconButton,
   Stack,
   styled,
+  Box,
+  Button,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  IconButton,
+  Stack,
+  styled,
 } from "@mui/material";
 import { t } from "i18next";
 import { BookOpen, Check, X } from "lucide-react";
@@ -20,53 +29,86 @@ type NameManagerDialogProperties = {
   onClose: () => void;
   open: boolean;
   model: Model;
+  onClose: () => void;
+  open: boolean;
+  model: Model;
 };
 
 function NameManagerDialog(props: NameManagerDialogProperties) {
   const [definedNamesLocal, setDefinedNamesLocal] = useState<DefinedName[]>();
   const [definedName, setDefinedName] = useState<DefinedName>({
     name: "",
-    scope: 0,
+    scope: undefined,
     formula: "",
   });
 
-  // render named ranges from model
+  // render definedNames from model
   useEffect(() => {
-    const definedNamesModel = props.model.getDefinedNameList();
-    setDefinedNamesLocal(definedNamesModel);
-    console.log("definedNamesModel EFFECT", definedNamesModel);
-  }, []);
+    if (props.open) {
+      const definedNamesModel = props.model.getDefinedNameList();
+      setDefinedNamesLocal(definedNamesModel);
+      console.log("definedNamesModel EFFECT", definedNamesModel);
+    }
+  }, [props.open]);
 
   const handleSave = () => {
     try {
       console.log("SAVE", definedName);
+
       props.model.newDefinedName(
         definedName.name,
-        definedName.scope, //null is workbook
+        definedName.scope,
         definedName.formula,
       );
     } catch (error) {
-      console.log("SAVE FAILED", error);
+      console.log("DefinedName save failed", error);
     }
     props.onClose();
   };
 
-  const handleChange = (field: keyof DefinedName, value: string | number) => {
+  const handleChange = (
+    field: keyof DefinedName,
+    value: string | number | undefined,
+  ) => {
     setDefinedName((prev: DefinedName) => ({
       ...prev,
       [field]: value,
     }));
   };
 
-  const handleDelete = (name: string, scope: number) => {
-    console.log("DELETE", name, scope);
-    props.model.deleteDefinedName(name, scope);
+  const handleDelete = (name: string, scope: number | undefined) => {
+    try {
+      props.model.deleteDefinedName(name, scope);
+    } catch (error) {
+      console.log("DefinedName delete failed", error);
+    }
+    // should re-render modal
+  };
+
+  const handleUpdate = (
+    name: string,
+    scope: number | undefined,
+    newName: string,
+    newScope: number | undefined,
+    newFormula: string,
+  ) => {
+    try {
+      // partially update?
+      props.model.updateDefinedName(name, scope, newName, newScope, newFormula);
+    } catch (error) {
+      console.log("DefinedName update failed", error);
+    }
   };
 
   const formatFormula = (): string => {
     const worksheets = props.model.getWorksheetsProperties();
     const selectedView = props.model.getSelectedView();
+  const formatFormula = (): string => {
+    const worksheets = props.model.getWorksheetsProperties();
+    const selectedView = props.model.getSelectedView();
 
+    return getFullRangeToString(selectedView, worksheets);
+  };
     return getFullRangeToString(selectedView, worksheets);
   };
 
@@ -99,12 +141,14 @@ function NameManagerDialog(props: NameManagerDialogProperties) {
             model={props.model}
             onChange={handleChange}
             onDelete={handleDelete}
+            canDelete={true}
           />
         ))}
         <NamedRange
           worksheets={props.model.getWorksheetsProperties()}
           formula={formatFormula()}
           onChange={handleChange}
+          canDelete={false}
           model={props.model}
         />
       </StyledDialogContent>
@@ -336,6 +380,10 @@ const StyledDialog = styled(Dialog)(() => ({
     height: "380px",
     minWidth: "620px",
   },
+  "& .MuiPaper-root": {
+    height: "380px",
+    minWidth: "620px",
+  },
 }));
 
 const StyledDialogTitle = styled(DialogTitle)`
@@ -355,6 +403,12 @@ padding: 20px 12px 20px 20px;
 `;
 
 const StyledRangesHeader = styled(Stack)(({ theme }) => ({
+  flexDirection: "row",
+  gap: "12px",
+  fontFamily: theme.typography.fontFamily,
+  fontSize: "12px",
+  fontWeight: "700",
+  color: theme.palette.info.main,
   flexDirection: "row",
   gap: "12px",
   fontFamily: theme.typography.fontFamily,

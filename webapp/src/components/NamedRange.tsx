@@ -6,6 +6,12 @@ import {
   MenuItem,
   TextField,
   styled,
+  Box,
+  Divider,
+  IconButton,
+  MenuItem,
+  TextField,
+  styled,
 } from "@mui/material";
 import { Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -16,47 +22,55 @@ type NamedRangeProperties = {
   formula: string;
   model: Model;
   worksheets: WorksheetProperties[];
-  onChange: (field: keyof DefinedName, value: string | number) => void;
-  onDelete?: (name: string, scope: number) => void;
+  onChange: (
+    field: keyof DefinedName,
+    value: string | number | undefined,
+  ) => void;
+  onDelete?: (name: string, scope: number | undefined) => void;
+  canDelete: boolean;
+  onUpdate?: (
+    name: string,
+    scope: number | undefined,
+    newName: string,
+    newScope: number | undefined,
+    newFormula: string,
+  ) => void;
 };
 
 function NamedRange(props: NamedRangeProperties) {
-  const [canDelete, setCanDelete] = useState(true); // while creating deleted should be disabled. how to differentiate if it exists in model or not?
   const [name, setName] = useState(props.name || "");
-  const [scope, setScope] = useState(props.scope || null); // default should be 0 as Workbook (Global), but does not find it in sheets[]
+  const [scope, setScope] = useState(props.scope || undefined);
   const [formula, setFormula] = useState(props.formula);
+  const [nameError, setNameError] = useState(false);
+  const [formulaError, setFormulaError] = useState(false);
 
-  const handleChange = (field: keyof DefinedName, value: string) => {
+  const handleChange = (
+    field: keyof DefinedName,
+    value: string | number | undefined,
+  ) => {
     if (field === "name") {
-      setName(value);
+      setName(value as string);
       props.onChange("name", value);
     }
     if (field === "scope") {
-      setScope(+value);
-      props.onChange("scope", +value);
+      setScope(value as number | undefined);
+      props.onChange("scope", value);
     }
     if (field === "formula") {
-      setFormula(value);
+      setFormula(value as string);
       props.onChange("formula", value);
     }
   };
 
   useEffect(() => {
-    // send unchanged formula value to parent
+    // send initial formula value to parent
     handleChange("formula", formula);
-
-    // if name does not exist in model, cannot be deleted
-    const definedNames = props.model.getDefinedNameList();
-    if (!definedNames.find((n) => n.name)) {
-      setCanDelete(false);
-    }
   }, []);
 
   const handleDelete = () => {
-    props.onDelete?.(name, +scope);
+    props.onDelete?.(name, scope);
   };
 
-  //! add validations for name & range
   return (
     <>
       <StyledBox>
@@ -66,7 +80,7 @@ function NamedRange(props: NamedRangeProperties) {
           size="small"
           margin="none"
           fullWidth
-          // error={name === ""} // add proper logic
+          error={nameError}
           value={name}
           onChange={(event) => handleChange("name", event.target.value)}
           onKeyDown={(event) => {
@@ -81,9 +95,17 @@ function NamedRange(props: NamedRangeProperties) {
           size="small"
           margin="none"
           fullWidth
-          value={scope}
-          onChange={(event) => handleChange("scope", event.target.value)}
+          value={scope ?? "Workbook (Global)"}
+          onChange={(event) =>
+            handleChange(
+              "scope",
+              event.target.value === "Workbook (Global)"
+                ? undefined
+                : event.target.value,
+            )
+          }
         >
+          <MenuItem value="Workbook (Global)">Workbook (Global)</MenuItem>
           {props.worksheets.map((option, index) => (
             <MenuItem key={option.sheet_id} value={index}>
               {option.name}
@@ -96,7 +118,7 @@ function NamedRange(props: NamedRangeProperties) {
           size="small"
           margin="none"
           fullWidth
-          error={formula === ""} // add proper logic
+          error={formulaError}
           value={formula}
           onChange={(event) => handleChange("formula", event.target.value)}
           onKeyDown={(event) => {
@@ -104,7 +126,7 @@ function NamedRange(props: NamedRangeProperties) {
           }}
           onClick={(event) => event.stopPropagation()}
         />
-        <StyledIconButton onClick={handleDelete} disabled={!canDelete}>
+        <StyledIconButton onClick={handleDelete} disabled={!props.canDelete}>
           <Trash2 size={12} />
         </StyledIconButton>
       </StyledBox>
@@ -124,9 +146,18 @@ const StyledTextField = styled(TextField)(() => ({
     height: "28px",
     margin: 0,
   },
+  "& .MuiInputBase-root": {
+    height: "28px",
+    margin: 0,
+  },
 }));
 
 const StyledIconButton = styled(IconButton)(({ theme }) => ({
+  color: theme.palette.error.main,
+  "&.Mui-disabled": {
+    opacity: 0.6,
+    color: theme.palette.error.light,
+  },
   color: theme.palette.error.main,
   "&.Mui-disabled": {
     opacity: 0.6,
