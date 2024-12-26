@@ -1,6 +1,10 @@
 import type { Area, Cell } from "./types";
 
-import { type SelectedView, type WorksheetProperties, columnNameFromNumber } from "@ironcalc/wasm";
+import {
+  type SelectedView,
+  type WorksheetProperties,
+  columnNameFromNumber,
+} from "@ironcalc/wasm";
 
 /**
  *  Returns true if the keypress should start editing
@@ -16,10 +20,18 @@ export function isEditingKey(key: string): boolean {
   return false;
 }
 
-export type NavigationKey = "ArrowRight" | "ArrowLeft" | "ArrowDown" | "ArrowUp" | "Home" | "End";
+export type NavigationKey =
+  | "ArrowRight"
+  | "ArrowLeft"
+  | "ArrowDown"
+  | "ArrowUp"
+  | "Home"
+  | "End";
 
 export const isNavigationKey = (key: string): key is NavigationKey =>
-  ["ArrowRight", "ArrowLeft", "ArrowDown", "ArrowUp", "Home", "End"].includes(key);
+  ["ArrowRight", "ArrowLeft", "ArrowDown", "ArrowUp", "Home", "End"].includes(
+    key,
+  );
 
 export const getCellAddress = (selectedArea: Area, selectedCell: Cell) => {
   const isSingleCell =
@@ -42,7 +54,7 @@ export function rangeToStr(
     columnEnd: number;
   },
   referenceSheet: number,
-  referenceName: string
+  referenceName: string,
 ): string {
   const { sheet, rowStart, rowEnd, columnStart, columnEnd } = range;
   const sheetName = sheet === referenceSheet ? "" : `'${referenceName}'!`;
@@ -50,23 +62,23 @@ export function rangeToStr(
     return `${sheetName}${columnNameFromNumber(columnStart)}${rowStart}`;
   }
   return `${sheetName}${columnNameFromNumber(columnStart)}${rowStart}:${columnNameFromNumber(
-    columnEnd
+    columnEnd,
   )}${rowEnd}`;
 }
 
 export function getFullRangeToString(
   selectedView: SelectedView,
-  worksheets: WorksheetProperties[] // solo pasar names
+  worksheets: WorksheetProperties[], // solo pasar names
 ): string {
   // order of values is confusing compared to rangeToStr range type, needs refactoring for consistency
   const [rowStart, columnStart, rowEnd, columnEnd] = selectedView.range;
-  const sheetNames = worksheets.map(s => s.name);
+  const sheetNames = worksheets.map((s) => s.name);
   const sheetName = `${sheetNames[selectedView.sheet]}!`;
 
   if (rowStart === rowEnd && columnStart === columnEnd) {
     return `${sheetName}${columnNameFromNumber(columnStart)}${rowStart}`;
   }
   return `${sheetName}${columnNameFromNumber(columnStart)}${rowStart}:${columnNameFromNumber(
-    columnEnd
+    columnEnd,
   )}${rowEnd}`;
 }
